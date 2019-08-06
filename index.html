@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Calendar</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="app"></div>
+
+    <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom/umd/react-router-dom.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.25.0/babel.min.js"></script>
+    <script type="text/babel">
+        let events = [
+            {
+                date: '09.08.2019',
+                events:[
+                    {name:'event name', body: 'event body', time: '11:00'},
+                    {name:'event name2', body: 'event bod2', time: '11:00'}
+                ]
+            },
+            {
+                date: '10.08.2019',
+                events:[
+                    {name:'event 2', body: 'event 2', time: '12:00'}
+                ]
+            },
+            {
+                date: '14.08.2019',
+                events:[
+                    {name:'practice', body: 'Blankets creek trail', time: '11:00'}
+                ]
+            },
+            {
+                date: '20.08.2019',
+                events:[
+                    {name:'event 2', body: 'event 2', time: '12:00'}
+                ]
+            },
+            {
+                date: '21.08.2019',
+                events:[
+                    {name:'event 2', body: 'event 2', time: '12:00'},
+                    {name:'event 2', body: 'event 2', time: '12:00'},
+                    {name:'event 2', body: 'event 2', time: '12:00'},
+                    {name:'event 2', body: 'event 2', time: '12:00'}
+                ]
+            },
+            {
+                date: '29.08.2019',
+                events:[
+                    {name:'event 2', body: 'event 2', time: '12:00'},
+                    {name:'event 2', body: 'event 2', time: '12:00'}
+                ]
+            },
+            {
+                date: '31.08.2019',
+                events:[
+                    {name:'event 2', body: 'event 2', time: '12:00'},
+                    {name:'event 2', body: 'event 2', time: '12:00'}
+                ]
+            }
+        ];
+
+        class Header extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    isPanelVisible: false,
+                    isModalVisible: false
+                };
+            }
+            scrollCalendar = (direction) => {
+                const { selectedDay, mode, onDateChange } = this.props;
+                let date = moment(selectedDay);
+                    date = date[direction](1, mode).startOf(mode);
+                onDateChange(date);
+            };
+            toggleMode = () => {
+                const { mode, onModeChange } = this.props;
+                mode === "month" ? onModeChange("week") : onModeChange("month");
+            };
+            showPanel = () => {
+                this.setState({isPanelVisible: !this.state.isPanelVisible});
+            };
+            showModal = () => {
+                this.setState({isModalVisible: !this.state.isModalVisible});
+            };
+            addEvent = () => {
+                const { selectedDay, onEventAdd } = this.props;
+                let eventsArr = this.props.events;
+                let index = eventsArr.findIndex((obj) => obj.date === selectedDay.format('DD.MM.YYYY'));
+                const newEvent = {
+                    name: this.refs.eventName.value,
+                    body: this.refs.eventBody.value,
+                    time: this.refs.timePicker.value
+                };
+
+                if(index !== -1) {
+                    let updatedDay = eventsArr.splice(index, 1);
+                    updatedDay[0].events.unshift(newEvent);
+                    eventsArr.unshift(updatedDay[0]);
+                    onEventAdd(eventsArr);
+                } else {
+                    onEventAdd([
+                            ...this.props.events,
+                        {
+                            date: selectedDay.format('DD.MM.YYYY'),
+                            events: [newEvent]
+                        }
+                    ]);
+                }
+                this.showModal();
+            };
+            render() {
+                const { isModalVisible, isPanelVisible } = this.state;
+                const { mode, selectedDay } = this.props;
+                return  <div className="calendar-header">
+                                {
+                                    isModalVisible &&
+                                    <div className = "add-event-modal" ref="modal">
+                                        <div className="btn-container">
+                                            <button onClick={this.showModal}>&times;</button>
+                                            <h5>New event</h5>
+                                            <button onClick={this.addEvent} >&#10003;</button>
+                                        </div>
+                                        <input type="text" ref="eventName" placeholder='eventname'/>
+                                        <input type="text" ref="eventBody" placeholder='eventbody'/>
+                                        <input type="time" ref="timePicker"/>
+                                    </div>
+                                }
+                                <div className="btn-container">
+                                    <button onClick={this.showModal} className="show-modal-btn">+</button>
+                                </div>
+                                <div>
+                                    <div className="calendar-nav">
+                                        <button className="nav-btn prev-btn" onClick={() => this.scrollCalendar("subtract")}>
+                                        {
+                                            mode === "month" ? moment(selectedDay).subtract(1, "month").format("MMM") : "prev"
+                                        }
+                                        </button>
+                                        <span className={`current-month ${isPanelVisible && "active"}`} onClick={this.showPanel}>
+                                            {
+                                            mode === "month" ?
+                                            selectedDay.format("MMMM")
+                                            : `${moment(selectedDay.format("YYYY M DD"), "YYYY M DD").startOf("week").format("MMMM D")}
+                                             - ${moment(selectedDay.format("YYYY M DD"), "YYYY M DD").endOf("week").format("MMMM D")}`
+                                            }
+                                        </span>
+                                        <button className="nav-btn next-btn" onClick={() => this.scrollCalendar("add")}>
+                                        {
+                                            mode === "month" ? moment(selectedDay).add(1, "month").format("MMM") : "next"
+                                        }
+                                        </button>
+                                    </div>
+                                    {
+                                        isPanelVisible &&
+                                        <div className="select" ref="toggle">
+                                            <div className="btn-container">
+                                                <button onClick={this.toggleMode}>This week</button>
+                                                <button onClick={this.toggleMode}>This month</button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div className="days-of-week">
+                                    <span className="day-of-week">S</span>
+                                    <span className="day-of-week">M</span>
+                                    <span className="day-of-week">T</span>
+                                    <span className="day-of-week">W</span>
+                                    <span className="day-of-week">T</span>
+                                    <span className="day-of-week">F</span>
+                                    <span className="day-of-week">S</span>
+                                </div>
+                        </div>
+            }
+        }
+
+        class Day extends React.Component {
+            constructor(props) {
+                super(props);
+            }
+            selectDay = (e) => {
+                const { day, onDateChange } = this.props;
+                const selectedDay = parseInt(e.currentTarget.innerHTML);
+                const selectedDate = moment(day, "YYYY M DD").format("YYYY M ") + selectedDay;
+                onDateChange(moment(selectedDate));
+            };
+            renderIndicators = () => {
+                const data = this.props.events;
+                let indicators = "";
+                if(data) {
+                    for(let i = 0; i < data.events.length; i++) {
+                        indicators += "<span></span>";
+                    }
+                    return indicators;
+                }
+                return null;
+            };
+            getDayClass = () => {
+                const { day, selectedDay } = this.props;
+                const currDay = moment(day, "YYYY M DD");
+                return `day
+                    ${currDay.isSame(moment().format("YYYY M DD")) && "current-day"}
+                    ${currDay.isSame(selectedDay) && "selected-day"}
+                    ${ (currDay.format("ddd") === "Sun" || currDay.format("ddd") === "Sat") && "day-off" }`
+            };
+            render() {
+                const day = this.props.day;
+                return <span className = {this.getDayClass()}  onClick={this.selectDay}>
+                            {moment(day, "YYYY M DD").format('D')}
+                            <div className="event-indicator"
+                                 dangerouslySetInnerHTML = {{__html: this.renderIndicators(moment(day, "YYYY M DD").format("D"))}}>
+                            </div>
+                        </span>
+            }
+        }
+
+        class CalendarBody extends React.Component {
+            constructor(props) {
+                super(props);
+            }
+            renderMonth(daysInMonth) {
+                const { selectedDay, events, onDateChange } = this.props;
+                let start = moment(selectedDay, 'YYYY M DD').startOf("month");
+                let dateArr = [];
+                let emptyCells = +start.format("e");
+                while(emptyCells) {
+                    dateArr.push(<span key={emptyCells}>&nbsp;</span>);
+                    emptyCells--;
+                }
+                let i = 1;
+                while(i <= +daysInMonth) {
+                    dateArr.push(
+                        <Day key={start.format("YYYY M DD")}
+                             day={start.format("YYYY M DD")}
+                             selectedDay={selectedDay.format("YYYY M DD")}
+                             onDateChange={onDateChange}
+                             events={events.find((item) => {
+                                return item.date === start.format("DD.MM.YYYY");
+                            })}
+                        />
+                    );
+                    start.add(1, 'days');
+                    i++;
+                }
+                return dateArr.map((day) => {
+                    return day
+                });
+            };
+            renderWeek(selected) {
+                const { selectedDay, onDateChange, events } = this.props;
+                let start = moment(selected, "YYYY M DD").startOf("week");
+                let dateArr = [];
+                let i = 0;
+                while(i < 7) {
+                        dateArr.push(
+                            <Day key={start}
+                                 day={start}
+                                 selectedDay={selectedDay.format("YYYY M DD")}
+                                 onDateChange={onDateChange}
+                                 events={events.find((item) => {
+                                    return item.date === moment(start).format("DD.MM.YYYY");
+                                 })}/>
+                        );
+                        start = moment(start, "YYYY M DD").add(1, 'days').format("YYYY M DD");
+                        i++;
+                }
+                return dateArr.map((day) => {
+                    return day
+                });
+            };
+            render() {
+                const { mode, selectedDay } = this.props;
+                return  <div className="calendar-month">
+                            {mode === "week" ? this.renderWeek(selectedDay) : this.renderMonth(selectedDay.daysInMonth())}
+                        </div>
+            };
+        }
+
+        class EventList extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    selectedEvent: { name: "", body: "", time: "" },
+                    showEventModal: false,
+                };
+            }
+            renderTodayEvents() {
+                const { selectedDay, events } = this.props;
+                let data = events.find((item) => {
+                    return item.date === selectedDay.format('DD.MM.YYYY')
+                });
+                if(data && data.events.length) {
+                    return data.events;
+                }
+                return null;
+            };
+            renderOtherEvents() {
+
+                const { mode, selectedDay, events } = this.props;
+                const startOfMonth = moment(selectedDay).startOf("month");
+                const endOfMonth = moment(selectedDay).endOf("month");
+                return events.filter((day) => {
+                    return moment(day.date, "DD.MM.YYYY").isBetween(startOfMonth, endOfMonth) &&
+                          !moment(selectedDay.format("DD.MM.YYYY"), "DD.MM.YYYY").isSame(moment(day.date , "DD.MM.YYYY") , "DD.MM.YYYY");
+                });
+            }
+            eventInfo(data, index) {
+                this.refs.eventInfo.style.display === "block" ? this.refs.eventInfo.style.display = "none" : this.refs.eventInfo.style.display = "block";
+                this.setState({selectedEvent: {...data, index}});
+            }
+            closeModal = () => {
+                this.refs.eventInfo.style.display = "none";
+            };
+            showEventModal = () => {
+                this.setState({showEventModal: !this.state.showEventModal});
+            };
+            onEventUpdated = (val) => {
+                this.setState({selectedEvent: val});
+            };
+            deleteEvent = () => {
+                let { events, onEventsUpdated } = this.props;
+                for(let i = 0; i < events.length; i++) {
+                    if(moment(selectedDay.format("DD.MM.YYYY"), "DD.MM.YYYY").isSame(moment(events[i].date , "DD.MM.YYYY") , "DD.MM.YYYY")) {
+                        const index = this.state.selectedEvent.index;
+                        data[i].events.splice(index, 1);
+                    }
+                }
+                onEventsUpdated(data);
+                this.refs.eventInfo.style.display = "none";
+            };
+            render() {
+                const { showEventModal, selectedEvent } = this.state
+                const { events, selectedDay } = this.props;
+                return <div className="event-container">
+                                {
+                                    showEventModal &&
+                                        <EventModal isVisible={this.showEventModal}
+                                                    selectedEvent={selectedEvent}
+                                                    selectedDay={selectedDay}
+                                                    onEventChange={this.onEventUpdated}
+                                                    events={events}
+                                        />
+                                }
+                                <div  ref="eventInfo" className="event-info-modal">
+                                    <div className="event-info">
+                                        <div className="btn-container">
+                                            <button className="back" onClick={this.closeModal}></button>
+                                            <button className="edit" onClick={this.showEventModal}></button>
+                                            <button className="delete" onClick={this.deleteEvent}></button>
+                                        </div>
+                                        <div className="content">
+                                            <h2>{selectedEvent.body}</h2>
+                                            <p>{selectedEvent.name}</p>
+                                            <span className="ei-date">{selectedDay.format("dddd, DD MMMM")}</span>
+                                        </div>
+                                        <span className="ei-time"><span className="muted">Starts </span>{selectedEvent.time}</span>
+                                    </div>
+                                </div>
+                                <div className="event-date-header">
+                                    <h3>{
+                                            selectedDay && moment(selectedDay, "YYYY M DD").format("dddd, DD MMMM")
+                                        }
+                                    </h3>
+                                </div>
+                                <div className="event-list">
+                                    {
+                                        this.renderTodayEvents() ?
+                                        this.renderTodayEvents().map((event, index) => {
+                                            return <div className="today-event" onClick={this.eventInfo.bind(this, event, index)}>
+
+                                                        <div>
+                                                            <h5 className="name">{event.body}</h5>
+                                                            <p className="body">{event.name}</p>
+                                                        </div>
+                                                        <div>
+                                                            <span className="time">{event.time}</span>
+                                                        </div>
+                                                    </div>
+                                    }) :
+                                        <h3>Today is no events</h3>
+                                    }
+                                </div>
+                                <div className="other-events-list">
+                                    {
+                                        this.renderOtherEvents().map((eventObj) => {
+                                            return eventObj.events.length &&
+                                                <div>
+                                                    <h4>{moment(eventObj.date, "DD.MM.YYYY").format("ddd, DD MMMM")}</h4>
+                                                    {
+                                                        eventObj.events.map((event, index) => {
+                                                            return  <div className="event-item">
+                                                                        <div className="row">
+                                                                            <h5 className="event-name">{event.name}</h5>
+                                                                            <span className="event-time">{event.time}</span>
+                                                                        </div>
+                                                                        <p className="event-description">{event.body}</p>
+                                                                    </div>
+                                                        })
+                                                    }
+                                                </div>
+                                        })
+                                    }
+                                </div>
+
+                        </div>
+            }
+        }
+
+        class EventModal extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    time: this.props.selectedEvent.time,
+                    name: this.props.selectedEvent.name,
+                    body: this.props.selectedEvent.body
+                };
+            }
+            closeModal = () => {
+                this.props.isVisible();
+            };
+            onFormChange = (e) => {
+                const { id, value } = e.currentTarget;
+                this.setState({ [id] : value });
+            };
+            updateEvent = () => {
+                const { name, body, time } = this.state;
+                const { selectedDay, index, isVisible, onEventChange } = this.props;
+                let data = this.props.events;
+                let dayIndex = data.findIndex((day) => {
+                    return day.date === moment(selectedDay).format("DD.MM.YYYY");
+                });
+                data[dayIndex].events.splice(index, 1, {name, body, time});
+                onEventChange({name, body, time});
+                isVisible();
+            };
+            render() {
+                const { name, body, time } = this.state;
+                return  <div className = "edit-event-modal" ref="modal">
+                            <div className="btn-container">
+                                <button onClick={this.closeModal}>&times;</button>
+                                <h5>Edit event</h5>
+                                <button onClick={this.updateEvent}>&#10003;</button>
+                            </div>
+                            <input type="text" ref="eventName" id="name" placeholder='eventname' value={name} onChange={this.onFormChange}/>
+                            <input type="text" ref="eventBody" id="body" placeholder='eventbody' value={body} onChange={this.onFormChange}/>
+                            <input type="time" ref="timePicker" id="time" value={time} onChange={this.onFormChange}/>
+                        </div>
+            }
+        }
+
+        class App extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    mode: "month",
+                    selectedDay: moment(),
+                    events: events
+                };
+            }
+            selectedDayChanged = (date) => {
+                this.setState({ selectedDay : date });
+            };
+            changeMode = (selectedMode) => {
+                this.setState({ mode : selectedMode });
+            };
+            eventsDataUpdated = (data) => {
+                this.setState({events : data});
+            };
+            render() {
+                const { events, mode, selectedDay } = this.state;
+                return  <div id="calendar">
+                            <Header selectedDay={selectedDay}
+                                    mode={mode}
+                                    events={events}
+                                    onEventAdd={this.eventsDataUpdated}
+                                    onDateChange={this.selectedDayChanged}
+                                    onModeChange={this.changeMode}/>
+                            <CalendarBody selectedDay={selectedDay}
+                                          onDateChange={this.selectedDayChanged}
+                                          mode={mode}
+                                          events={events}/>
+                            <EventList  selectedDay={selectedDay}
+                                        mode={mode}
+                                        events={events}
+                                        onEventsUpdated={this.eventsDataUpdated}/>
+                        </div>
+            }
+        }
+
+        ReactDOM.render(
+            <App />,
+            document.getElementById("app")
+        )
+    </script>
+</body>
+</html>
